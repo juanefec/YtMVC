@@ -44,7 +44,6 @@ namespace AngularMVC.Controllers
         public int Downloaded = 0;
         public int Downloading = 0;
         private static readonly YoutubeClient YoutubeClient = new YoutubeClient();
-        private static readonly Cli FfmpegCli = new Cli(Path.Combine(Directory.GetCurrentDirectory(), "ffmpeg.exe"));
         private static readonly string OutputDirectoryPath = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
 

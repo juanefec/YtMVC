@@ -41,8 +41,6 @@ namespace AngularMVC.Controllers
     public class Domain
     {
         YoutubeClient ytClient;
-        public int Downloaded = 0;
-        public int Downloading = 0;
         private static readonly YoutubeClient YoutubeClient = new YoutubeClient();
         private static readonly string OutputDirectoryPath = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 

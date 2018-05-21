@@ -20,12 +20,12 @@
 
 <div class="container" *ngIf="loaded">
 
-    <h1 >Thumbnail Gallery</h1>
+    <h1>Thumbnail Gallery</h1>
 
     <div class="row text-center text-lg-left">
 
         <div *ngFor="let thumbnail of thumbnails" class="col-lg-3 col-md-4 col-xs-6">
-            <a href="#" class="d-block mb-4 h-100">
+            <a (click)="download(thumbnail.id)" class="d-block mb-4 h-100">
                 {{thumbnail.tittle}}
                 <img class="img-fluid img-thumbnail" [src]="thumbnail.thumbnails.highResUrl">
 
@@ -37,12 +37,10 @@
 
 
 <style>
-    .gallery {}
-
     div {
         margin: 20px;
     }
-
+    
     input {
         margin: 25px;
         width: 90%;

@@ -29,10 +29,11 @@ export class CounterComponent {
                 if (el !== "")   this.urls.push(el);
             }
         );
+        console.log(this.urls)
     }
     public sendUrls() {
         this.addUrls();
-        this.http.post(this.baseUrl + 'api/YtDl/loadURLs', this.urls).subscribe(
+        this.http.post(`${this.baseUrl}api/YtDl/loadURLs`, this.urls).subscribe(
             result => {
                 this.downloading = true;
                 try {
@@ -50,10 +51,20 @@ export class CounterComponent {
             }, 
             error => console.error(error));
     }
+    public download(id: string) {
+        this.http.get(`${this.baseUrl}api/YtDl/Download?id=${id}`).subscribe(
+            result => {
+                console.log('Downloading: ', id)
+            },
+            error => {console.error(error);}
+        );
+    }
+
     
 }
 interface FileInformation {
     tittle: string;
+    id: string;
     thumbnails: Thumbnail;
 }
 interface Thumbnail {

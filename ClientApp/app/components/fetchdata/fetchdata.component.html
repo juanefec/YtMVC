@@ -1,24 +1,42 @@
-<h1>Weather forecast</h1>
+<div *ngIf="!loaded">
+    <h1>Paste your Playlist URL</h1>
+    <br>
+    <div id="input-container">
 
-<p>This component demonstrates fetching data from the server.</p>
+        <input class="form-control" type="text" id="ulr0" placeholder="Paste here!">
 
-<p *ngIf="!forecasts"><em>Loading...</em></p>
 
-<table class='table' *ngIf="forecasts">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Temp. (C)</th>
-            <th>Temp. (F)</th>
-            <th>Summary</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let forecast of forecasts">
-            <td>{{ forecast.dateFormatted }}</td>
-            <td>{{ forecast.temperatureC }}</td>
-            <td>{{ forecast.temperatureF }}</td>
-            <td>{{ forecast.summary }}</td>
-        </tr>
-    </tbody>
-</table>
+
+    </div>
+    <br>
+    <button type="button" class="btn btn-primary btn-lg btn-block" (click)="sendUrl()">Load</button>
+</div>
+
+<div class="container" *ngIf="loaded">
+
+    <h1>Thumbnail Gallery</h1>
+
+    <div class="row text-center text-lg-left">
+
+        <div *ngFor="let thumbnail of thumbnails" class="col-lg-3 col-md-4 col-xs-6">
+            <a (click)="download(thumbnail.id)" class="d-block mb-4 h-100">
+                {{thumbnail.tittle}}
+                <img class="img-fluid img-thumbnail" [src]="thumbnail.thumbnails.highResUrl">
+
+            </a>
+        </div>
+    </div>
+
+</div>
+
+
+<style>
+    div {
+        margin: 20px;
+    }
+    
+    input {
+        margin: 25px;
+        width: 90%;
+    }
+</style>

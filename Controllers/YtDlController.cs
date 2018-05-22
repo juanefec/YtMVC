@@ -27,10 +27,17 @@ namespace AngularMVC.Controllers
             return await Domain.GetFileInformation(urls);
         }
 
+        [HttpGet("[action]")]
+        public async Task<IList<FileInformation>> loadPlaylist([FromQuery]string url)
+        {
+            return await Domain.PlaylistFileInformation(url);
+        }
+
 
         [HttpGet("[action]")]
         public async Task Download([FromQuery]string id)
         {
+            
             await Domain.DownloadAndConvertVideoAsync(id);
             Response.StatusCode = 200;
         }
@@ -67,26 +74,27 @@ namespace AngularMVC.Controllers
 
         public static async Task DownloadAndConvertVideoAsync(string id)
         {
-            Console.WriteLine($"Working on video [{id}]...");
-
-            // Get video info
             var video = await YoutubeClient.GetVideoAsync(id);
+            Console.WriteLine($"Working on video [{id}]...");
             var set = await YoutubeClient.GetVideoMediaStreamInfosAsync(id);
             var cleanTitle = video.Title.Replace(Path.GetInvalidFileNameChars(), '_');
-            Console.WriteLine($"{video.Title}");
-
-            // Get highest bitrate audio-only or highest quality mixed stream
             var streamInfo = GetBestAudioStreamInfo(set);
-
-            // Download to OutputDirectoryPath file
-
-            Console.WriteLine("Downloading...");
             Directory.CreateDirectory(OutputDirectoryPath);
             var streamFileExt = streamInfo.Container.GetFileExtension();
             var streamFilePath = Path.Combine(OutputDirectoryPath, $"{cleanTitle}.{streamFileExt}");
             await YoutubeClient.DownloadMediaStreamAsync(streamInfo, streamFilePath);
+        }
 
-        
+        public static async Task DownloadAndConvertVideoAsync(string id, YoutubeExplode.Models.Video video)
+        {
+            Console.WriteLine($"Working on video [{id}]...");
+            var set = await YoutubeClient.GetVideoMediaStreamInfosAsync(id);
+            var cleanTitle = video.Title.Replace(Path.GetInvalidFileNameChars(), '_');
+            var streamInfo = GetBestAudioStreamInfo(set);
+            Directory.CreateDirectory(OutputDirectoryPath);
+            var streamFileExt = streamInfo.Container.GetFileExtension();
+            var streamFilePath = Path.Combine(OutputDirectoryPath, $"{cleanTitle}.{streamFileExt}");
+            await YoutubeClient.DownloadMediaStreamAsync(streamInfo, streamFilePath);
         }
         private static MediaStreamInfo GetBestAudioStreamInfo(MediaStreamInfoSet set)
         {
@@ -95,6 +103,44 @@ namespace AngularMVC.Controllers
             if (set.Muxed.Any())
                 return set.Muxed.WithHighestVideoQuality();
             throw new Exception("No applicable media streams found for this video");
+        }        
+
+        public async Task<IList<FileInformation>> PlaylistFileInformation(string url)
+        {
+            if (YoutubeClient.TryParsePlaylistId(url, out var id))
+            {
+                var playlisInfo = await YoutubeClient.GetPlaylistAsync(id);
+                await DownloadPlaylistAsync(id, playlisInfo);
+                var result = playlisInfo.Videos.Select(v => new FileInformation 
+                                        {
+                                            Tittle = v.Title,
+                                            Id = v.Id,
+                                            Thumbnails = v.Thumbnails
+                                        }).ToList();
+                return result;
+            }else{
+                return new List<FileInformation>();
+            }
+        }
+
+        private async Task DownloadPlaylistAsync(string id, YoutubeExplode.Models.Playlist playlist)
+        {
+            Console.WriteLine($"Working on playlist [{id}]...");          
+            
+            Console.WriteLine($"{playlist.Title} ({playlist.Videos.Count} videos)");
+
+            // Work on the videos
+            Console.WriteLine();
+            var dTasks = new Task[playlist.Videos.Count];
+            var i = 0;
+            foreach (var video in playlist.Videos)
+            {
+                dTasks[i] = DownloadAndConvertVideoAsync(video.Id, video);
+                Console.WriteLine($"Downloading: {video.Title}");
+                i++;
+            }
+            Task.WaitAll(dTasks);
+            Console.WriteLine("Everything downloaded");
         }
 
     }

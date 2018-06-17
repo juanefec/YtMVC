@@ -1,12 +1,13 @@
 import { Component, Inject } from '@angular/core';
-
-import { Http } from '@angular/http';
+import 'rxjs/Rx'
+import {saveAs as importedSaveAs} from "file-saver";
+import { Http, Response, RequestOptions, RequestOptionsArgs, ResponseContentType } from '@angular/http';
 
 @Component({
-    selector: 'fetchdata',
-    templateUrl: './fetchdata.component.html'
+    selector: 'videos',
+    templateUrl: './videos.component.html'
 })
-export class FetchDataComponent {
+export class VideosComponent {
     public currentCount = 0;
     downloading = false;
     urls: string[] = [];
@@ -31,9 +32,9 @@ export class FetchDataComponent {
         );
         console.log(this.urls)
     }
-    public sendUrl() {
+    public sendUrls() {
         this.addUrls();
-        this.http.get(`${this.baseUrl}api/YtDl/loadPlaylist?url=${this.urls[0]}`).subscribe(
+        this.http.post(`${this.baseUrl}api/YtDl/loadURLs`, this.urls).subscribe(
             result => {
                 this.downloading = true;
                 try {
@@ -51,10 +52,13 @@ export class FetchDataComponent {
             }, 
             error => console.error(error));
     }
-    public download(id: string) {
-        this.http.get(`${this.baseUrl}api/YtDl/Download?id=${id}`).subscribe(
-            result => {
-                console.log('Downloading: ', id)
+    public download(id: string, tittle: string) {
+        let options = new RequestOptions({responseType: ResponseContentType.Blob });
+        this.http.get(`${this.baseUrl}api/YtDl/downloadStream2?id=${id}`)
+        .map(res => res.blob())
+        .subscribe(
+            blob => {
+                importedSaveAs(blob, tittle);
             },
             error => {console.error(error);}
         );

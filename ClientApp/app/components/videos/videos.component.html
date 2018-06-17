@@ -25,7 +25,7 @@
     <div class="row text-center text-lg-left">
 
         <div *ngFor="let thumbnail of thumbnails" class="col-lg-3 col-md-4 col-xs-6">
-            <a (click)="download(thumbnail.id)" class="d-block mb-4 h-100">
+            <a (click)="download(thumbnail.id, thumbnail.tittle)" class="d-block mb-4 h-100">
                 {{thumbnail.tittle}}
                 <img class="img-fluid img-thumbnail" [src]="thumbnail.thumbnails.highResUrl">
 

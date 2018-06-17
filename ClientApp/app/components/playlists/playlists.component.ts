@@ -1,12 +1,13 @@
 import { Component, Inject } from '@angular/core';
-
-import { Http } from '@angular/http';
+import 'file-loader';
+import { Http, Response } from '@angular/http';
+import 'rxjs/Rx' ;
 
 @Component({
-    selector: 'counter',
-    templateUrl: './counter.component.html'
+    selector: 'playlists',
+    templateUrl: './playlists.component.html'
 })
-export class CounterComponent {
+export class PlaylistComponent {
     public currentCount = 0;
     downloading = false;
     urls: string[] = [];
@@ -31,9 +32,9 @@ export class CounterComponent {
         );
         console.log(this.urls)
     }
-    public sendUrls() {
+    public sendUrl() {
         this.addUrls();
-        this.http.post(`${this.baseUrl}api/YtDl/loadURLs`, this.urls).subscribe(
+        this.http.get(`${this.baseUrl}api/YtDl/loadPlaylist?url=${this.urls[0]}`).subscribe(
             result => {
                 this.downloading = true;
                 try {
@@ -52,15 +53,17 @@ export class CounterComponent {
             error => console.error(error));
     }
     public download(id: string) {
-        this.http.get(`${this.baseUrl}api/YtDl/Download?id=${id}`).subscribe(
-            result => {
-                console.log('Downloading: ', id)
+        this.http.get(`${this.baseUrl}api/YtDl/Download?id=${id}`)
+        .map( (x: Response) => x.json() )
+        .subscribe(
+            data => {
+                console.log('Downloading: ', data)
             },
             error => {console.error(error);}
         );
     }
 
-    
+
 }
 interface FileInformation {
     tittle: string;

@@ -1,18 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using YoutubeExplode;
-using System.IO;
-using System.Text.RegularExpressions;
-using CliWrap;
-using Tyrrrz.Extensions;
-using YoutubeExplode.Models.MediaStreams;
-
-
 namespace AngularMVC.Controllers
 {
+
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using Microsoft.AspNetCore.Mvc;
+    using YoutubeExplode;
+    using System.IO;
+    using System.Text.RegularExpressions;
+    using CliWrap;
+    using Tyrrrz.Extensions;
+    using YoutubeExplode.Models.MediaStreams;
+
+
+
     [Route("api/[controller]")]
     public class YtDlController : Controller
     {
@@ -35,11 +37,31 @@ namespace AngularMVC.Controllers
 
 
         [HttpGet("[action]")]
-        public async Task Download([FromQuery]string id)
+        public async Task download([FromQuery]string id)
         {
-            
+
             await Domain.DownloadAndConvertVideoAsync(id);
             Response.StatusCode = 200;
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> downloadStream(string id)
+        {
+
+            Stream output = new MemoryStream();
+            await Domain.DownloadAndConvertVideoStreamAsync(id, output);
+            var response = File(output, "application/octet-stream"); // FileStreamResult
+            return response;
+        }
+
+        [HttpGet("[action]")]
+        public async Task<FileResult> downloadStream2(string id)
+        {
+            byte[] fileBytes = System.IO.File.ReadAllBytes(await Domain.DownloadMusicToClient(id));
+            string fileName = "myfile.ext";
+            return File(fileBytes, System.Net.Mime.MediaTypeNames.Application.Octet, fileName);
+
+
         }
 
 
@@ -50,6 +72,7 @@ namespace AngularMVC.Controllers
         YoutubeClient ytClient;
         private static readonly YoutubeClient YoutubeClient = new YoutubeClient();
         private static readonly string OutputDirectoryPath = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+
 
 
         public async Task<IList<FileInformation>> GetFileInformation(string[] urls)
@@ -67,6 +90,29 @@ namespace AngularMVC.Controllers
                 });
             }
             return response;
+        }
+
+        public byte[] GetFile(string s)
+        {
+            System.IO.FileStream fs = System.IO.File.OpenRead(s);
+            byte[] data = new byte[fs.Length];
+            int br = fs.Read(data, 0, data.Length);
+            if (br != fs.Length)
+                throw new System.IO.IOException(s);
+            return data;
+        }
+
+        public static async Task DownloadAndConvertVideoStreamAsync(string id, Stream output)
+        {
+            var video = await YoutubeClient.GetVideoAsync(id);
+            Console.WriteLine($"Working on video [{id}]...");
+            var set = await YoutubeClient.GetVideoMediaStreamInfosAsync(id);
+            var cleanTitle = video.Title.Replace(Path.GetInvalidFileNameChars(), '_');
+            var streamInfo = GetBestAudioStreamInfo(set);
+            Directory.CreateDirectory(OutputDirectoryPath);
+            var streamFileExt = streamInfo.Container.GetFileExtension();
+            var streamFilePath = Path.Combine(OutputDirectoryPath, $"{cleanTitle}.{streamFileExt}");
+            await YoutubeClient.DownloadMediaStreamAsync(streamInfo, output);
         }
 
         public static async Task DownloadAndConvertVideoAsync(string id)
@@ -100,34 +146,28 @@ namespace AngularMVC.Controllers
             if (set.Muxed.Any())
                 return set.Muxed.WithHighestVideoQuality();
             throw new Exception("No applicable media streams found for this video");
-        }        
+        }
 
         public async Task<IList<FileInformation>> PlaylistFileInformation(string url)
         {
             if (YoutubeClient.TryParsePlaylistId(url, out var id))
             {
                 var playlisInfo = await YoutubeClient.GetPlaylistAsync(id);
-                await DownloadPlaylistAsync(id, playlisInfo);
-                var result = playlisInfo.Videos.Select(v => new FileInformation 
-                                        {
-                                            Tittle = v.Title,
-                                            Id = v.Id,
-                                            Thumbnails = v.Thumbnails
-                                        }).ToList();
-                return result;
-            }else{
+                return playlisInfo.Videos.Select(v => new FileInformation
+                {
+                    Tittle = v.Title,
+                    Id = v.Id,
+                    Thumbnails = v.Thumbnails
+                }).ToList();
+            }
+            else
+            {
                 return new List<FileInformation>();
             }
         }
 
         private async Task DownloadPlaylistAsync(string id, YoutubeExplode.Models.Playlist playlist)
         {
-            Console.WriteLine($"Working on playlist [{id}]...");          
-            
-            Console.WriteLine($"{playlist.Title} ({playlist.Videos.Count} videos)");
-
-            // Work on the videos
-            Console.WriteLine();
             var dTasks = new Task[playlist.Videos.Count];
             var i = 0;
             foreach (var video in playlist.Videos)
@@ -140,6 +180,28 @@ namespace AngularMVC.Controllers
             Console.WriteLine("Everything downloaded");
         }
 
+        public async Task DownloadCompressPlaylist(string id)
+        {
+
+            var playlisInfo = await YoutubeClient.GetPlaylistAsync(id);
+            await DownloadPlaylistAsync(id, playlisInfo);
+
+        }
+
+        public async Task<string> DownloadMusicToClient(string id)
+        {
+            var video = await YoutubeClient.GetVideoAsync(id);
+            Console.WriteLine($"Working on video [{id}]...");
+            var set = await YoutubeClient.GetVideoMediaStreamInfosAsync(id);
+            var cleanTitle = video.Title.Replace(Path.GetInvalidFileNameChars(), '_');
+            var streamInfo = GetBestAudioStreamInfo(set);
+            Directory.CreateDirectory(OutputDirectoryPath);
+            var streamFileExt = streamInfo.Container.GetFileExtension();
+            var fullTitle = $"{cleanTitle}.{streamFileExt}";
+            var streamFilePath = Path.Combine(OutputDirectoryPath, fullTitle);
+            await YoutubeClient.DownloadMediaStreamAsync(streamInfo, streamFilePath);
+            return streamFilePath;
+        }
     }
 
     public class FileInformation

@@ -1,22 +1,48 @@
-<h1>Hello, world!</h1>
-<p>Welcome to your new single-page application, built with:</p>
-<ul>
-    <li [routerLinkActive]="['link-active']">
-        <a [routerLink]="['/videos']">
-            <span class='glyphicon glyphicon-education'></span> Video
-        </a>
-    </li>
-    <li [routerLinkActive]="['link-active']">
-        <a [routerLink]="['/fetch-data']">
-            <span class='glyphicon glyphicon-th-list'></span> Playlist
-        </a>
-    </li>
-</ul>
-<p>To help you get started, we've also set up:</p>
-<ul>
-    <li><strong>Client-side navigation</strong>. For example, click <em>Videos</em> then <em>Back</em> to return here.</li>
-    <li><strong>Server-side prerendering</strong>. For faster initial loading and improved SEO, your Angular app is prerendered on the server. The resulting HTML is then transferred to the browser where a client-side copy of the app takes over.</li>
-    <li><strong>Webpack dev middleware</strong>. In development mode, there's no need to run the <code>webpack</code> build tool. Your client-side resources are dynamically built on demand. Updates are available as soon as you modify any file.</li>
-    <li><strong>Hot module replacement</strong>. In development mode, you don't even need to reload the page after making most changes. Within seconds of saving changes to files, your Angular app will be rebuilt and a new instance injected into the page.</li>
-    <li><strong>Efficient production builds</strong>. In production mode, development-time features are disabled, and the <code>webpack</code> build tool produces minified static CSS and JavaScript files.</li>
-</ul>
+<div *ngIf="!loaded">
+    <h1>Paste your URL's</h1>
+    <br>
+    <div id="input-container">
+
+        <input class="form-control" type="text" id="ulr0" placeholder="Paste here!">
+
+        <input class="form-control" type="text" id="ulr1" placeholder="Paste here!">
+
+        <input class="form-control" type="text" id="ulr2" placeholder="Paste here!">
+
+        <input class="form-control" type="text" id="ulr3" placeholder="Paste here!">
+
+        <input class="form-control" type="text" id="ulr4" placeholder="Paste here!">
+
+    </div>
+    <br>
+    <button type="button" class="btn btn-primary btn-lg btn-block" (click)="sendUrls()">Load</button>
+</div>
+
+<div class="container" *ngIf="loaded">
+
+    <h1>Thumbnail Gallery</h1>
+
+    <div class="row text-center text-lg-left">
+
+        <div *ngFor="let thumbnail of thumbnails" class="col-lg-3 col-md-4 col-xs-6">
+            <a (click)="download(thumbnail.id, thumbnail.tittle)" class="d-block mb-4 h-100">
+                {{thumbnail.tittle}}
+                <img class="img-fluid img-thumbnail" [src]="thumbnail.thumbnails.highResUrl">
+
+            </a>
+        </div>
+    </div>
+
+</div>
+
+
+<style>
+    div {
+        margin: 20px;
+    }
+    
+    input {
+        margin: 25px;
+        width: 90%;
+    }
+</style>

@@ -15,10 +15,12 @@ export class VideosComponent {
     baseUrl: string;
     thumbnails: FileInformation[] = [];
     loaded = false;
+    blobs: Blob[];
     
     constructor(http: Http, @Inject('BASE_URL') baseUrl: string) {        
         this.http = http;
         this.baseUrl = baseUrl;
+        this.blobs = [] as Blob[];
     }
 
 
@@ -53,15 +55,22 @@ export class VideosComponent {
             error => console.error(error));
     }
     public download(id: string, tittle: string) {
-        let options = new RequestOptions({responseType: ResponseContentType.Blob });
-        this.http.get(`${this.baseUrl}api/YtDl/downloadStream2?id=${id}`)
-        .map(res => res.blob())
+        let options = new RequestOptions({responseType: ResponseContentType.ArrayBuffer });
+        this.http.get(`${this.baseUrl}api/YtDl/download?id=${id}`)
         .subscribe(
-            blob => {
-                importedSaveAs(blob, tittle);
+            (data: any) => {
+                this.getFile(data)
             },
-            error => {console.error(error);}
+            error => {
+                console.log('asd')
+                console.error(error);
+            },
+
         );
+    }
+
+    getFile(filename: string) {
+        this.http.get(`localhost:9090/getFileByTitle/${filename}`).subscribe();
     }
 
     

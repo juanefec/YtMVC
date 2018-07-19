@@ -37,11 +37,9 @@ namespace AngularMVC.Controllers
 
 
         [HttpGet("[action]")]
-        public async Task download([FromQuery]string id)
+        public async Task<string> download([FromQuery]string id)
         {
-
-            await Domain.DownloadAndConvertVideoAsync(id);
-            Response.StatusCode = 200;
+            return await Domain.DownloadAndConvertVideoAsync(id);
         }
 
         [HttpGet("[action]")]
@@ -57,10 +55,21 @@ namespace AngularMVC.Controllers
         [HttpGet("[action]")]
         public async Task<FileResult> downloadStream2(string id)
         {
-            byte[] fileBytes = System.IO.File.ReadAllBytes(await Domain.DownloadMusicToClient(id));
-            string fileName = "myfile.ext";
-            return File(fileBytes, System.Net.Mime.MediaTypeNames.Application.Octet, fileName);
+            string path = await Domain.DownloadMusicToClient(id);            
+            byte[] fileBytes = System.IO.File.ReadAllBytes(path);            
+            return File(fileContents: fileBytes, contentType: System.Net.Mime.MediaTypeNames.Application.Octet, fileDownloadName: GetFileName(path));
+        }
 
+        [HttpGet("[action]")]
+        public async Task<string> downloadFullVideo(string id)
+        {
+            return await Domain.DownloadAndConvertVideoclipAsync(id);
+        }
+
+        private string GetFileName(string path)
+        {
+            var splittedPath = path.Split('\\');
+            return splittedPath[splittedPath.Count()-1];
 
         }
 
@@ -102,7 +111,7 @@ namespace AngularMVC.Controllers
             return data;
         }
 
-        public static async Task DownloadAndConvertVideoStreamAsync(string id, Stream output)
+        public static async Task<string> DownloadAndConvertVideoStreamAsync(string id, Stream output)
         {
             var video = await YoutubeClient.GetVideoAsync(id);
             Console.WriteLine($"Working on video [{id}]...");
@@ -111,11 +120,13 @@ namespace AngularMVC.Controllers
             var streamInfo = GetBestAudioStreamInfo(set);
             Directory.CreateDirectory(OutputDirectoryPath);
             var streamFileExt = streamInfo.Container.GetFileExtension();
-            var streamFilePath = Path.Combine(OutputDirectoryPath, $"{cleanTitle}.{streamFileExt}");
+            var filename = $"{cleanTitle}.{streamFileExt}";
+            var streamFilePath = Path.Combine(OutputDirectoryPath, filename);
             await YoutubeClient.DownloadMediaStreamAsync(streamInfo, output);
+            return filename;
         }
 
-        public static async Task DownloadAndConvertVideoAsync(string id)
+        public static async Task<string> DownloadAndConvertVideoAsync(string id)
         {
             var video = await YoutubeClient.GetVideoAsync(id);
             Console.WriteLine($"Working on video [{id}]...");
@@ -124,11 +135,13 @@ namespace AngularMVC.Controllers
             var streamInfo = GetBestAudioStreamInfo(set);
             Directory.CreateDirectory(OutputDirectoryPath);
             var streamFileExt = streamInfo.Container.GetFileExtension();
-            var streamFilePath = Path.Combine(OutputDirectoryPath, $"{cleanTitle}.{streamFileExt}");
+            var filename = $"{cleanTitle}.{streamFileExt}";
+            var streamFilePath = Path.Combine(OutputDirectoryPath, filename);
             await YoutubeClient.DownloadMediaStreamAsync(streamInfo, streamFilePath);
+            return filename;
         }
 
-        public static async Task DownloadAndConvertVideoAsync(string id, YoutubeExplode.Models.Video video)
+        public static async Task<string> DownloadAndConvertVideoAsync(string id, YoutubeExplode.Models.Video video)
         {
             Console.WriteLine($"Working on video [{id}]...");
             var set = await YoutubeClient.GetVideoMediaStreamInfosAsync(id);
@@ -136,13 +149,37 @@ namespace AngularMVC.Controllers
             var streamInfo = GetBestAudioStreamInfo(set);
             Directory.CreateDirectory(OutputDirectoryPath);
             var streamFileExt = streamInfo.Container.GetFileExtension();
-            var streamFilePath = Path.Combine(OutputDirectoryPath, $"{cleanTitle}.{streamFileExt}");
+            var filename = $"{cleanTitle}.{streamFileExt}";
+            var streamFilePath = Path.Combine(OutputDirectoryPath, filename);
             await YoutubeClient.DownloadMediaStreamAsync(streamInfo, streamFilePath);
+            return filename;
+        }
+
+        public static async Task<string> DownloadAndConvertVideoclipAsync(string id)
+        {
+            var video = await YoutubeClient.GetVideoAsync(id);
+            Console.WriteLine($"Working on video [{id}]...");
+            var set = await YoutubeClient.GetVideoMediaStreamInfosAsync(id);
+            var cleanTitle = video.Title.Replace(Path.GetInvalidFileNameChars(), '_');
+            var streamInfo = GetBestVideoStreamInfo(set);
+            Directory.CreateDirectory(OutputDirectoryPath);
+            var streamFileExt = streamInfo.Container.GetFileExtension();
+            var filename = $"{cleanTitle}.{streamFileExt}";
+            var streamFilePath = Path.Combine(OutputDirectoryPath, filename);
+            await YoutubeClient.DownloadMediaStreamAsync(streamInfo, streamFilePath);
+            return filename;
         }
         private static MediaStreamInfo GetBestAudioStreamInfo(MediaStreamInfoSet set)
         {
             if (set.Audio.Any())
                 return set.Audio.WithHighestBitrate();
+            if (set.Muxed.Any())
+                return set.Muxed.WithHighestVideoQuality();
+            throw new Exception("No applicable media streams found for this video");
+        }
+
+        private static MediaStreamInfo GetBestVideoStreamInfo(MediaStreamInfoSet set)
+        {
             if (set.Muxed.Any())
                 return set.Muxed.WithHighestVideoQuality();
             throw new Exception("No applicable media streams found for this video");

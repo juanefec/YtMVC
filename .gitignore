@@ -236,8 +236,11 @@ _Pvt_Extensions
 # FAKE - F# Make
 .fake/
 
-# Music files
-
+# Media files
 *.webm
 *.mp3
 *.m4a
+*.mp4
+
+# Exes
+*.exe

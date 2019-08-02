@@ -171,10 +171,8 @@ namespace AngularMVC.Controllers
         }
         private static MediaStreamInfo GetBestAudioStreamInfo(MediaStreamInfoSet set)
         {
-            if (set.Audio.Any())
-                return set.Audio.WithHighestBitrate();
-            if (set.Muxed.Any())
-                return set.Muxed.WithHighestVideoQuality();
+            if (set.Audio.Any(a => a.AudioEncoding == AudioEncoding.Aac))
+                return set.Audio.First(a => a.AudioEncoding == AudioEncoding.Aac);
             throw new Exception("No applicable media streams found for this video");
         }
 
